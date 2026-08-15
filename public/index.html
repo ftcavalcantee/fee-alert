@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Fee Alert</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, sans-serif;
+      background: #f5f5f4;
+      margin: 0;
+      padding: 24px;
+      color: #1a1a1a;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 600;
+      margin: 0 0 20px;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid #e5e5e3;
+    }
+    .card .label {
+      font-size: 13px;
+      color: #6b6b68;
+      margin-bottom: 6px;
+    }
+    .card .value {
+      font-size: 26px;
+      font-weight: 600;
+    }
+    .card.destaque .value { color: #1d9e75; }
+    .chart-box {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #e5e5e3;
+      position: relative;
+      height: 300px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Fee Alert</h1>
+
+  <div class="cards">
+    <div class="card destaque">
+      <div class="label">Taxa atual</div>
+      <div class="value" id="atual">--</div>
+    </div>
+    <div class="card">
+      <div class="label">Média 24h</div>
+      <div class="value" id="media">--</div>
+    </div>
+    <div class="card">
+      <div class="label">Mínima 24h</div>
+      <div class="value" id="minima">--</div>
+    </div>
+    <div class="card">
+      <div class="label">Máxima 24h</div>
+      <div class="value" id="maxima">--</div>
+    </div>
+  </div>
+
+  <div class="chart-box">
+    <canvas id="grafico" role="img" aria-label="Histórico da taxa de rede nas últimas 24 horas"></canvas>
+  </div>
+
+  <script>
+    async function carregar() {
+      const res = await fetch('/api/historico');
+      const dados = await res.json();
+
+      if (dados.length === 0) {
+        document.getElementById('atual').innerText = 'Sem dados';
+        return;
+      }
+
+      const valores = dados.map(d => d.hourFee);
+      const ultimo = valores[valores.length - 1];
+      const media = valores.reduce((a, b) => a + b, 0) / valores.length;
+      const minima = Math.min(...valores);
+      const maxima = Math.max(...valores);
+
+      document.getElementById('atual').innerText = ultimo + ' sat/vB';
+      document.getElementById('media').innerText = media.toFixed(1) + ' sat/vB';
+      document.getElementById('minima').innerText = minima + ' sat/vB';
+      document.getElementById('maxima').innerText = maxima + ' sat/vB';
+
+      new Chart(document.getElementById('grafico'), {
+        type: 'line',
+        data: {
+          labels: dados.map(d => new Date(d.timestamp).toLocaleTimeString()),
+          datasets: [{
+            label: 'sat/vB',
+            data: valores,
+            borderColor: '#2a78d6',
+            backgroundColor: 'rgba(42,120,214,0.08)',
+            fill: true,
+            tension: 0.2,
+            pointRadius: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    carregar();
+    setInterval(carregar, 60000); // atualiza sozinho a cada 1 min
+  </script>
+</body>
+</html>
