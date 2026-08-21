@@ -20,30 +20,22 @@ Um serviço que monitora a taxa da rede continuamente, compara com o histórico 
 
 **Objetivo:** economizar dinheiro em taxas, sem precisar ficar checando manualmente.
 
-## Input
+## Como funciona
 
-O usuário fornece:
+1. Busca a taxa atual na API do mempool.space a cada 10 minutos.
+2. Salva o valor no histórico (SQLite).
+3. Calcula a média, mínima e máxima das últimas 24h.
+4. Compara a taxa atual com esse histórico.
+5. Se a taxa cruzar o limite definido pelo usuário, dispara um alerta via Telegram.
+6. Mostra tudo numa tela web simples, com gráfico e explicação do que é sat/vB.
 
-- Threshold desejado (ex: "avise quando ficar abaixo de 10 sat/vB").
-- Canal de notificação (email, Telegram, etc).
+## Stack
 
-## Process
-
-1. Busca a taxa atual na API do mempool.space, periodicamente.
-2. Salva o valor no histórico (banco de dados).
-3. Calcula a média das últimas 24h.
-4. Compara a taxa atual com essa média.
-5. Se a taxa atual cruzar o threshold do usuário, dispara o alerta.
-
-## Output
-
-- Taxa atual (sat/vB).
-- Comparação com a média recente (ex: "60% abaixo da média das últimas 24h").
-- Notificação quando a condição do usuário for atingida.
-
-## Valor
-
-O usuário para de checar manualmente a taxa da rede e economiza dinheiro esperando o momento certo pra enviar sua transação.
+- **Backend:** Node.js
+- **Banco de dados:** SQLite (better-sqlite3)
+- **Frontend:** HTML/CSS/JS puro + Chart.js
+- **Notificação:** Telegram Bot API
+- **Agendamento:** node-cron
 
 ## Fonte de dados
 
@@ -65,6 +57,3 @@ Retorna:
 }
 ```
 
-## Status do projeto
-
-🚧 Em fase de definição da ideia — próximo passo é a arquitetura técnica.

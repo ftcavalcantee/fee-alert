@@ -4,59 +4,28 @@
   <meta charset="UTF-8">
   <title>Fee Alert</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      font-family: -apple-system, sans-serif;
-      background: #f5f5f4;
-      margin: 0;
-      padding: 24px;
-      color: #1a1a1a;
-    }
-    h1 {
-      font-size: 22px;
-      font-weight: 600;
-      margin: 0 0 20px;
-    }
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 16px;
-      border: 1px solid #e5e5e3;
-    }
-    .card .label {
-      font-size: 13px;
-      color: #6b6b68;
-      margin-bottom: 6px;
-    }
-    .card .value {
-      font-size: 26px;
-      font-weight: 600;
-    }
-    .card.destaque .value { color: #1d9e75; }
-    .chart-box {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      border: 1px solid #e5e5e3;
-      position: relative;
-      height: 300px;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <h1>Fee Alert</h1>
+  <div class="subtitulo">Monitor de taxa de rede do Bitcoin</div>
+
+  <div class="explicacao">
+    💡 <strong>O que é essa taxa (sat/vB)?</strong> Toda vez que alguém envia Bitcoin, paga uma pequena taxa
+    pros mineradores processarem a transação. Essa taxa é medida em <strong>satoshis por byte</strong>
+    (sat/vB) — quanto <strong>menor</strong> o número, mais <strong>barato</strong> está pra enviar
+    Bitcoin agora.
+  </div>
+
+  <div class="status">
+    <div class="bolinha" id="bolinha-status" style="background:#ccc;"></div>
+    <div class="texto">
+      <div class="valor" id="atual">Carregando...</div>
+      <div class="legenda" id="status-texto">Verificando o momento atual</div>
+    </div>
+  </div>
 
   <div class="cards">
-    <div class="card destaque">
-      <div class="label">Taxa atual</div>
-      <div class="value" id="atual">--</div>
-    </div>
     <div class="card">
       <div class="label">Média 24h</div>
       <div class="value" id="media">--</div>
@@ -70,10 +39,15 @@
       <div class="value" id="maxima">--</div>
     </div>
   </div>
+  <div class="card" style="grid-column: 1 / -1">
+    <div class="label">Custo estimado de uma transação agora</div>
+    <div class="value" id="custo">Calculando...</div>
+  </div>
 
   <div class="chart-box">
-    <canvas id="grafico" role="img" aria-label="Histórico da taxa de rede nas últimas 24 horas"></canvas>
+    <canvas id="grafico" role="img" aria-label="Histórico da taxa de rede nas últimas 24 horas, em satoshis por byte"></canvas>
   </div>
+  <div class="chart-legenda">Histórico da taxa nas últimas 24h (sat/vB = satoshis por byte, quanto menor, mais barato)</div>
 
   <script>
     async function carregar() {
@@ -81,7 +55,7 @@
       const dados = await res.json();
 
       if (dados.length === 0) {
-        document.getElementById('atual').innerText = 'Sem dados';
+        document.getElementById('atual').innerText = 'Sem dados ainda';
         return;
       }
 
@@ -95,6 +69,26 @@
       document.getElementById('media').innerText = media.toFixed(1) + ' sat/vB';
       document.getElementById('minima').innerText = minima + ' sat/vB';
       document.getElementById('maxima').innerText = maxima + ' sat/vB';
+
+      const bolinha = document.getElementById('bolinha-status');
+      const statusTexto = document.getElementById('status-texto');
+      if (ultimo <= media * 0.8) {
+        bolinha.style.background = '#1d9e75';
+        statusTexto.innerText = '✅ Bom momento pra enviar — taxa está barata comparada às últimas 24h';
+      } else if (ultimo >= media * 1.2) {
+        bolinha.style.background = '#d64545';
+        statusTexto.innerText = '⚠️ Taxa está cara agora — se puder, espere um pouco';
+      } else {
+        bolinha.style.background = '#d6a52a';
+        statusTexto.innerText = 'Taxa dentro do normal comparada às últimas 24h';
+      }
+
+      // 👇 PARTE NOVA — busca e mostra o custo em R$/US$
+      const resCusto = await fetch('/api/custo');
+      const dadosCusto = await resCusto.json();
+      document.getElementById('custo').innerText =
+        `R$ ${dadosCusto.custoBRL} (US$ ${dadosCusto.custoUSD})`;
+      // 👆 ATÉ AQUI
 
       new Chart(document.getElementById('grafico'), {
         type: 'line',
@@ -110,16 +104,20 @@
             pointRadius: 2
           }]
         },
+        
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } }
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { type: 'category' }
+          }
         }
       });
     }
 
     carregar();
-    setInterval(carregar, 60000); // atualiza sozinho a cada 1 min
+    setInterval(carregar, 60000);
   </script>
 </body>
 </html>

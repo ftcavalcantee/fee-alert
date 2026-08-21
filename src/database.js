@@ -16,7 +16,7 @@ db.exec(`
 
   function buscarUltimas24h(){
     const ontem = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    return db.prepare('SELECT hourFee FROM historico WHERE timestamp >= ?').all(ontem);
+    return db.prepare('SELECT timestamp, hourFee FROM historico WHERE timestamp >= ?').all(ontem);
   }
 
   module.exports = { salvar, buscarUltimas24h };
