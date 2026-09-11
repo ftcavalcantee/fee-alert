@@ -4,6 +4,7 @@
   "description": "Pessoas que enviam Bitcoin de vez em quando não querem ficar monitorando a taxa da rede o dia inteiro pra pegar o momento mais barato.",
   "main": "index.js",
   "scripts": {
+    "start": "node src/servidor.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
